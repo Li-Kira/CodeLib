@@ -73,6 +73,34 @@ private:
         // kt = 1 - kr;
     }
 
+	float DistributionGGX(Vector3f N, Vector3f H, float Roughness)
+	{
+		float alpha2 = Roughness * Roughness;
+		float NdotH = dotProduct(N, H) > 0.0f ? dotProduct(N, H) : 0.0f;
+		float NdotH2 = NdotH * NdotH;
+
+		float nom = alpha2;
+		float denom = (NdotH2 * (alpha2 - 1.0) + 1.0);
+		denom = M_PI * denom * denom;
+        if (denom < 0.001)
+            return 1.0f;
+        else
+		    return nom / denom;
+	}
+
+	float GeometrySmith(Vector3f N, Vector3f I, Vector3f L, float Roughness)
+	{
+		float k = (Roughness + 1) * (Roughness + 1) / 8;
+
+		float NdotV = dotProduct(N, I) > 0.0f ? dotProduct(N, I) : 0.0f;
+		float NdotL = dotProduct(N, L) > 0.0f ? dotProduct(N, L) : 0.0f;
+
+		float ggx1 = NdotV / (NdotV * (1.0 - k) + k);
+		float ggx2 = NdotL / (NdotL * (1.0 - k) + k);
+
+		return ggx1 * ggx2;
+	}
+
     Vector3f toWorld(const Vector3f &a, const Vector3f &N){
         Vector3f B, C;
         if (std::fabs(N.x) > std::fabs(N.y)){
@@ -146,7 +174,13 @@ Vector3f Material::sample(const Vector3f &wi, const Vector3f &N){
         }
         case MICROFACET:
         {
+			float x_1 = get_random_float(), x_2 = get_random_float();
+			float z = std::fabs(1.0f - 2.0f * x_1);
+			float r = std::sqrt(1.0f - z * z), phi = 2 * M_PI * x_2;
+			Vector3f localRay(r * std::cos(phi), r * std::sin(phi), z);
+			return toWorld(localRay, N);
 
+			break;
         }
 
 
@@ -166,7 +200,12 @@ float Material::pdf(const Vector3f &wi, const Vector3f &wo, const Vector3f &N){
         }
 		case MICROFACET:
 		{
-
+			// uniform sample probability 1 / (2 * PI)
+			if (dotProduct(wo, N) > 0.0f)
+				return 0.5f / M_PI;
+			else
+				return 0.0f;
+			break;
 		}
     }
 }
@@ -175,7 +214,7 @@ Vector3f Material::eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &
     switch(m_type){
         case DIFFUSE:
         {
-            // calculate the contribution of diffuse   model
+            // calculate the contribution of diffuse model
             float cosalpha = dotProduct(N, wo);
             if (cosalpha > 0.0f) {
                 Vector3f diffuse = Kd / M_PI;
@@ -187,9 +226,40 @@ Vector3f Material::eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &
         }
 		case MICROFACET:
 		{
+			float cosalpha = dotProduct(N, wo);
+			if (cosalpha > 0.0f) {
+				
+                Vector3f H = (-wi + wo).normalized();
+                float Roughness = 0.25f;
 
+                float D = DistributionGGX(N, H, Roughness);
+                float G = GeometrySmith(N, -wi, wo, Roughness);
+                float F;
+                fresnel(wi, N, ior, F);
+
+                Vector3f diffuse = (Vector3f(1.0f) - F) * Kd / M_PI;
+                Vector3f specular;
+                float divisor = 4 * dotProduct(wo, N) * dotProduct(-wi, N);
+                //防止分母趋于0的情况导致值过大
+                if (divisor < 0.001)
+                {
+                    specular = Vector3f(1);
+                }
+                else
+                {
+                    specular = (D * F * G) / divisor;
+                }
+                 
+
+                return diffuse + specular;
+			}
+			else
+				return Vector3f(0.0f);
+			break;
 		}
     }
 }
+
+
 
 #endif //RAYTRACING_MATERIAL_H

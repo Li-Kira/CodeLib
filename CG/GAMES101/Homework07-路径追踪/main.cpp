@@ -25,14 +25,12 @@ int main(int argc, char** argv)
 	Material* light = new Material(DIFFUSE, (8.0f * Vector3f(0.747f + 0.058f, 0.747f + 0.258f, 0.747f) + 15.6f * Vector3f(0.740f + 0.287f, 0.740f + 0.160f, 0.740f) + 18.4f * Vector3f(0.737f + 0.642f, 0.737f + 0.159f, 0.737f)));
 	light->Kd = Vector3f(0.65f);
 
-	//Material* red = new Material(MICROFACET, Vector3f(0.0f));
-	//red->Kd = Vector3f(0.63f, 0.065f, 0.05f);
-	//Material* green = new Material(MICROFACET, Vector3f(0.0f));
-	//green->Kd = Vector3f(0.14f, 0.45f, 0.091f);
-	//Material* white = new Material(MICROFACET, Vector3f(0.0f));
-	//white->Kd = Vector3f(0.725f, 0.71f, 0.68f);
-	//Material* light = new Material(DIFFUSE, (8.0f * Vector3f(0.747f + 0.058f, 0.747f + 0.258f, 0.747f) + 15.6f * Vector3f(0.740f + 0.287f, 0.740f + 0.160f, 0.740f) + 18.4f * Vector3f(0.737f + 0.642f, 0.737f + 0.159f, 0.737f)));
-	//light->Kd = Vector3f(0.65f);
+
+	Material* microfacet = new Material(MICROFACET, Vector3f(0.0f));
+	microfacet->Ks = Vector3f(0.45, 0.45, 0.45);
+	microfacet->Kd = Vector3f(0.3, 0.3, 0.25);
+	microfacet->ior = 12.85;
+    Sphere sphere(Vector3f(150, 100, 200), 100, microfacet);
 
     MeshTriangle floor("E:/Code/CG/CGHomework/Homework07/models/cornellbox/floor.obj", white);
     MeshTriangle shortbox("E:/Code/CG/CGHomework/Homework07/models/cornellbox/shortbox.obj", white);
@@ -42,7 +40,8 @@ int main(int argc, char** argv)
     MeshTriangle light_("E:/Code/CG/CGHomework/Homework07/models/cornellbox/light.obj", light);
 
     scene.Add(&floor);
-    scene.Add(&shortbox);
+    //scene.Add(&shortbox);
+    scene.Add(&sphere);
     scene.Add(&tallbox);
     scene.Add(&left);
     scene.Add(&right);

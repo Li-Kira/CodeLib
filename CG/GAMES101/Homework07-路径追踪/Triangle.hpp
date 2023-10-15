@@ -252,6 +252,9 @@ inline Intersection Triangle::getIntersection(Ray ray)
         return inter;
     t_tmp = dotProduct(e2, qvec) * det_inv;
 
+	if (t_tmp < 0)
+		return inter;
+
     // TODO find ray triangle intersection
     inter.distance = t_tmp;//光线经过的时间
     inter.happened = true;//是否与三角形相交

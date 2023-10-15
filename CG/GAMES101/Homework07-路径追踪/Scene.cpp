@@ -102,11 +102,13 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
         p - N * EPSILON;
 
     Ray ray_p2x(fixed_p, ws);
-
+    
     //由p点射出的光线相交的距离小于光线的距离，说明被物体遮挡，需要计算直接光照
-    if ((intersect(ray_p2x).distance - distance > -0.0001))
+    //原eps为0.0001,适当提高可以减少黑色横纹
+    if ((intersect(ray_p2x).distance - distance > -0.0016f))
     {
-        L_dir = emit * intersection.m->eval(wo, ws, N) * dotProduct(ws, N) * dotProduct(-ws, NN) / (distance * distance) / pdf;
+        if(pdf > EPSILON)
+            L_dir = emit * intersection.m->eval(wo, ws, N) * dotProduct(ws, N) * dotProduct(-ws, NN) / (distance * distance) / pdf;
     }
 
     //俄罗斯轮盘赌
@@ -116,11 +118,24 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
         Vector3f wi = intersection.m->sample(wo, N).normalized();
         Ray nextRay(fixed_p, wi);
         Intersection nextInter = intersect(nextRay);
-        if (nextInter.happened && !nextInter.m->hasEmission())
+
+        //防止pdf趋近0的情况
+        if (intersection.m->pdf(wo, wi, N) > EPSILON)
         {
-            L_indir = castRay(nextRay, depth + 1) * intersection.m->eval(wo, wi, N) * dotProduct(wi, N) / intersection.m->pdf(wo, wi, N) / RussianRoulette;
+			if (nextInter.happened && !nextInter.m->hasEmission())
+			{
+				L_indir = castRay(nextRay, depth + 1) * intersection.m->eval(wo, wi, N) * dotProduct(wi, N) / intersection.m->pdf(wo, wi, N) / RussianRoulette;
+			}
         }
+        
     }
 
-    return L_dir + L_indir;
+
+    //解决白点过多的问题
+    Vector3f color = L_dir + L_indir;
+    color.x = clamp(0, 1, color.x);
+    color.y = clamp(0, 1, color.y);
+    color.z = clamp(0, 1, color.z);
+
+    return color;
 }
