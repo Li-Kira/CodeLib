@@ -6,7 +6,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.UIElements;
 
-public class OutlinePass : ScriptableRenderPass
+public class BasePass : ScriptableRenderPass
 {
     private RenderTargetIdentifier m_Source;
     private RenderTargetIdentifier m_Destination;

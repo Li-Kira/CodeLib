@@ -5,7 +5,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
 [System.Serializable]
-public class OutlinePostProcessRenderFeature : ScriptableRendererFeature
+public class BasePostProcessRenderFeature : ScriptableRendererFeature
 {
     [SerializeField]
     private Shader m_outlineShader;

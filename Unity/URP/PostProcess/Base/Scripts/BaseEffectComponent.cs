@@ -7,7 +7,7 @@ using UnityEngine.Rendering.Universal;
 
 [Serializable]
 [VolumeComponentMenuForRenderPipeline("Custom/Outline", typeof(UniversalRenderPipeline))]
-public class OutlineEffectComponent : VolumeComponent, IPostProcessComponent
+public class BaseEffectComponent : VolumeComponent, IPostProcessComponent
 {
     public ClampedFloatParameter intensity = new ClampedFloatParameter(value: 0, min: 0, max: 1, true);
     public NoInterpColorParameter overlayColor = new NoInterpColorParameter(Color.white);
