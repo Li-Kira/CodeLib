@@ -2,22 +2,23 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering.Universal;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.UIElements;
 
 public class OutlinePass : ScriptableRenderPass
 {
+    //Blit
     private RenderTargetIdentifier m_Source;
     private RenderTargetIdentifier m_Destination;
     
     private Material m_Material;
     private OutlineEffectComponent m_OutlineEffect;
 
-    readonly int temporaryRTId = Shader.PropertyToID("_TempRT");
-
-
-    public OutlinePass(Material OutlineMaterial)
+    private readonly int temporaryRTId = Shader.PropertyToID("_TempRT");
+    
+    public OutlinePass(Material OutlineMaterial, RenderQueueType renderQueueType, int layerMask)
     {
         renderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;
         m_Material = OutlineMaterial;
@@ -38,7 +39,7 @@ public class OutlinePass : ScriptableRenderPass
     {
         if (renderingData.cameraData.isSceneViewCamera)
             return;
-
+        
         CommandBuffer cmd = CommandBufferPool.Get();
         VolumeStack stack = VolumeManager.instance.stack;
         m_OutlineEffect = stack.GetComponent<OutlineEffectComponent>();

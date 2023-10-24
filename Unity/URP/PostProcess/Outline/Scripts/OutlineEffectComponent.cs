@@ -17,9 +17,6 @@ public class OutlineEffectComponent : VolumeComponent, IPostProcessComponent
     public ClampedFloatParameter depthNormalThresholdScale = new ClampedFloatParameter (value: 7, min: 0, max: 10, true);
 
     [Header("Line Settings")]
-    // public ClampedFloatParameter thickness = new ClampedFloatParameter(value: 1, min: 0, max: 2, true);
-    // public FloatParameter depthMin = new FloatParameter(0);
-    // public FloatParameter depthMax = new FloatParameter(1.0f);
     public NoInterpColorParameter edgeColor = new NoInterpColorParameter(Color.white, true);
     
     public bool IsActive() => true;

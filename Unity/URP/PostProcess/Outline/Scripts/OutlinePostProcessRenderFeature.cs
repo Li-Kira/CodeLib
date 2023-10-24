@@ -1,29 +1,51 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering.Universal;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+
 
 [System.Serializable]
 public class OutlinePostProcessRenderFeature : ScriptableRendererFeature
 {
-    [SerializeField]
-    private Shader m_OutlineShader;
     private OutlinePass m_OutlinePass;
-    private NoOutlinePass m_NoOutlinePass;
     
-    [SerializeField]
-    private LayerMask outlinesLayerMask;
-    [SerializeField]
-    private LayerMask outlinesOccluderLayerMask;
+    [System.Serializable]
+    public class OutlineObjectSettings
+    {
+        public Shader m_OutlineShader;
+        public FilterSettings filterSettings = new FilterSettings();
+    }
+    
+    [System.Serializable]
+    public class FilterSettings
+    {
+        public RenderQueueType RenderQueueType;
+        public LayerMask LayerMask;
+        //public LayerMask occluderLayerMask;
+        public FilterSettings()
+        {
+            RenderQueueType = RenderQueueType.Opaque;
+            LayerMask = 0;
+            //occluderLayerMask = 0;
+        }
+    }
+    
+    
+    public OutlineObjectSettings settings = new OutlineObjectSettings();
+    
+    // public NoOutlinePass.ViewSpaceNormalsTextureSettings viewSpaceNormalsTextureSettings = new NoOutlinePass.ViewSpaceNormalsTextureSettings();
+    // private NoOutlinePass m_NoOutlinePass;
     
     public override void Create()
     {
-        var OutlineMaterial = CoreUtils.CreateEngineMaterial(m_OutlineShader);
+        FilterSettings filter = settings.filterSettings;
+        var OutlineMaterial = CoreUtils.CreateEngineMaterial(settings.m_OutlineShader);
         
-        //m_NoOutlinePass = new NoOutlinePass(outlinesLayerMask, outlinesOccluderLayerMask);
-        m_OutlinePass = new OutlinePass(OutlineMaterial);
-        
+        m_OutlinePass = new OutlinePass(OutlineMaterial,filter.RenderQueueType, filter.LayerMask);
+        //m_NoOutlinePass = new NoOutlinePass(RenderPassEvent.BeforeRenderingPrePasses, filter.LayerMask,filter.LayerMask ,viewSpaceNormalsTextureSettings);
     }
 
     public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
