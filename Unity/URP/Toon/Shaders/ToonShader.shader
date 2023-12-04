@@ -9,6 +9,7 @@ Shader "Custom/ToonShader"
         _SDFTex ("Face SDF Texture", 2D) = "white" {}
         _EmissionTex ("Emission Texture", 2D) = "white" {}
         
+        [Space(10)]
         [Header(Setting)]
         [Toggle(SHADOW_RAMP_ON)] _isRampOn ("isRampOn", Float) = 0.0
         [Toggle(SHADOW_FACE_ON)] _isFace ("isFace", Float) = 0.0
@@ -16,39 +17,48 @@ Shader "Custom/ToonShader"
         [Toggle(BLINK_ON)] _isBlink ("isBlink", Float) = 0.0
         [Toggle(REFLECTION_ON)] _isReflection ("isReflection", Float) = 0.0
         
+        [Space(10)]
         [Header(Shadow)]
         _ShadowRange("Shadow Range", Float) = 0
         _ShadowSmooth ("Shadow Smooth", Float) = 0.01
         
+        [Space(10)]
         [Header(Ramp)]
         _ShadowRampNum ("Ramp Num", Float) = 16
         _ShadowRampWidth ("Ramp Width", Float) = 256
         
+        [Space(10)]
         [Header(Aniso)]
         _AnisoFresnelPow ("AnisoFresnelPow", Float) = 20
         _AnisoFresnelIntensity ("AnisoFresnelIntensity", Float) = 0.01
         
+        [Space(10)]
+        [Header(Emission)]
+        _EmissionIntensity("Emission Intensity", Float) = 1.0
+        
+        [Space(10)]
         [Header(RimLight)]
         _OffsetMul ("RimLight Offset", Float) = 0.0012
         _Threshold ("RimLight Threshold", Float) = 0.07
         _FresnelMask ("RimLight Threshold", Float) = 0.7
         
-        [Header(Emission)]
-        _EmissionIntensity("Emission Intensity", Float) = 1.0
-        
+        [Space(10)]
         [Header(Outline)]
         _OutlineWidth("Width", Range(0,4)) = 1
         _OutlineColor("Color", Color) = (0.5,0.5,0.5,1)
         
+        [Space(10)]
         [Header(Outline ZOffset)]
         _OutlineZOffset("ZOffset (View Space)", Range(0,1)) = 0.0001
-        [NoScaleOffset]_OutlineZOffsetMaskTex("    Mask (black is apply ZOffset)", 2D) = "black" {}
-        _OutlineZOffsetMaskRemapStart("    RemapStart", Range(0,1)) = 0
-        _OutlineZOffsetMaskRemapEnd("    RemapEnd", Range(0,1)) = 1
+        [NoScaleOffset]_OutlineZOffsetMaskTex("Mask (black is apply ZOffset)", 2D) = "black" {}
+        _OutlineZOffsetMaskRemapStart("RemapStart", Range(0,1)) = 0
+        _OutlineZOffsetMaskRemapEnd("RemapEnd", Range(0,1)) = 1
         
+        [Space(10)]
         [Header(Transparent)]
         _Alpha("Alpha", Range(0,1)) = 1
         
+        [Space(10)]
         [Header(Reflection)]
         _ReflectionIntensity("Reflection Intensity", Float) = 0.2
         

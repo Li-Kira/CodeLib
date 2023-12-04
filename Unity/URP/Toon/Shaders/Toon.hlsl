@@ -74,36 +74,38 @@
         return ao;
     }
 
-    float GetAO(float3 worldNormal, float3 lightDirWS, float ao)
+    float GetAO(Varyings i, float3 lightDirWS)
     {
-        float NdotL = dot(worldNormal, lightDirWS);
+        float NdotL = dot(i.worldNormal, lightDirWS);
         float halfLambert = 0.5 + 0.5 * NdotL;
 
-        // -0.1 能让ao不是那么暗
-        float shadow = halfLambert * smoothstep(-0.1, 0.2, ao);
-        float noAOMask = step(0.9, ao);
-        shadow = lerp(shadow, 1.0, noAOMask);
+        half3 lightMap = SAMPLE_TEXTURE2D(_LightMap, sampler_LightMap, i.uv);
+        float ao = lightMap.r;
         
-        // 修正眼球错误AO
-        #ifdef SHADOW_FACE_ON
-            shadow = 1;
-        #endif
+        return ao;
         
-        return adjustAO(shadow);
+        // // -0.1 能让ao不是那么暗
+        // float shadow = halfLambert * smoothstep(-0.1, 0.2, ao);
+        // float noAOMask = step(0.9, ao);
+        // shadow = lerp(shadow, 1.0, noAOMask);
+        //
+        // // 修正眼球错误AO
+        // #ifdef SHADOW_FACE_ON
+        //     shadow = 1;
+        // #endif
         
+        //return adjustAO(shadow);
     }
 
     float GetFaceShadow(Varyings i, float3 lightDirWS)
     {
         float3 forwardDirWS = normalize(TransformObjectToWorldDir(float3(0.0,0.0,1.0)));
         float3 rightDirWS = normalize(TransformObjectToWorldDir(float3(1.0,0.0,0.0)));
-        float faceShadow_left = SAMPLE_TEXTURE2D(_SDFTex, sampler_SDFTex, i.uv).r;
 
         float2 faceShadowUV = float2(1 - i.uv.x, i.uv.y);
+        float faceShadow_left = SAMPLE_TEXTURE2D(_SDFTex, sampler_SDFTex, i.uv).r;
         float faceShadow_right = SAMPLE_TEXTURE2D(_SDFTex, sampler_SDFTex, faceShadowUV).r;
-
-        float eyeShadowMask = SAMPLE_TEXTURE2D(_LightMap, sampler_LightMap, faceShadowUV).g;
-
+        
         float FdotL = dot(forwardDirWS, lightDirWS);
         float RdotL = dot(rightDirWS, lightDirWS);
 
@@ -119,6 +121,8 @@
         // 如果光线在背后，则全是阴影，如果光线在前面，则按光线位置来决定阴影
         float shadow = mul(shadowBehind, shadowFront);
 
+        // 矫正眼部阴影
+        float eyeShadowMask = SAMPLE_TEXTURE2D(_LightMap, sampler_LightMap, faceShadowUV).g;
         float eyeMask = step(0.5, eyeShadowMask);
         shadow = lerp(shadow, 1.0, eyeMask);
         
@@ -128,7 +132,12 @@
     float GetShadow(Varyings i, float3 lightDirWS)
     {
         float NdotL = dot(i.worldNormal, lightDirWS);
-        float shadow = smoothstep(_ShadowRange, _ShadowRange + _ShadowSmooth, NdotL);
+        float shadow = smoothstep(_ShadowRange, _ShadowRange, NdotL);
+        //float shadow = smoothstep(_ShadowRange, _ShadowRange + _ShadowSmooth, NdotL);
+        float ao = GetAO(i, lightDirWS);
+        ao = smoothstep(-0.1, 0.5, ao);
+        shadow *= ao;
+        
         
         #ifdef SHADOW_FACE_ON
             shadow = GetFaceShadow(i, lightDirWS);
@@ -137,13 +146,12 @@
         return shadow;
     }
 
-    float2 GetRampUV(float shadow, int rampNum)
+    float2 GetRampUV(float shadow, float RampMap)
     {
-        float rampU = shadow * 2.0;
-        //float rampV = rampNum * 0.1 - 0.05;
-        //float rampV = rampNum * 0.1 - 0.05 + 0.5;
-        float rampV = 0.1;
-        
+        // 白天的情况，夜晚需要在rampV上面再加一个0.5
+        float rampU = shadow;
+        float rampV = RampMap * 0.45;
+
         #ifdef SHADOW_FACE_ON
             rampV = 0.1;
         #endif
@@ -151,28 +159,36 @@
         return float2(rampU, rampV);
     }
 
+    // half3 GetRampColor(Varyings i, float3 lightDirWS)
+    // {
+    //     float shadow = GetShadow(i, lightDirWS);
+    //     float2 rampUV = GetRampUV(shadow, _ShadowRampNum);
+    //     float lightValue = step(_ShadowRampWidth, rampUV.x);
+    //
+    //     half3 rampColor = SAMPLE_TEXTURE2D(_RampTex, sampler_RampTex, rampUV);
+    //     rampColor = lerp(rampColor, 1.0, lightValue);
+    //
+    //     return rampColor;
+    // }
+
     half3 GetRampColor(Varyings i, float3 lightDirWS)
     {
         float shadow = GetShadow(i, lightDirWS);
-        float2 rampUV = GetRampUV(shadow, _ShadowRampNum);
-        float lightValue = step(_ShadowRampWidth, rampUV.x);
+        float RampMap = SAMPLE_TEXTURE2D(_LightMap, sampler_LightMap, i.uv).a;
         
+        float2 rampUV = GetRampUV(shadow, RampMap);
         half3 rampColor = SAMPLE_TEXTURE2D(_RampTex, sampler_RampTex, rampUV);
-        rampColor = lerp(rampColor, 1.0, lightValue);
         
         return rampColor;
     }
 
-    float3 GetSpecular(Varyings i, float3 lightDirWS)
+    half3 GetSpecular(Varyings i, float3 lightDirWS)
     {
         float3 lightMap = SAMPLE_TEXTURE2D(_LightMap, sampler_LightMap, i.uv);
-
-        //Blinn-Phong
-        float halfDir = normalize(i.worldViewDir + lightDirWS);
-        float NdotH = max(0, dot(i.worldNormal, halfDir));
         
         // 各向异性高光
-        float anisoFresnel = pow((1.0 - saturate(dot(i.worldNormal, i.worldViewDir))), _AnisoFresnelPow) * _AnisoFresnelIntensity;
+        float NdotV = dot(i.worldNormal, i.worldViewDir);
+        float anisoFresnel = pow((1.0 - saturate(NdotV)), _AnisoFresnelPow) * _AnisoFresnelIntensity;
         float NdotL = dot(i.worldNormal, lightDirWS);
         float halfLambert = 0.5 + 0.5 * NdotL;
         float aniso = saturate(1 - anisoFresnel) * lightMap.b * halfLambert * 0.3;
@@ -292,27 +308,29 @@
         float4 mainLightColor = float4(mainLight.color, 1);
 
         // lightMap.r: AO | lightMap.g: Specular | lightMap.b: SpecularIntensity | lightMap.a: Ramp
-        float4 baseColor = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv);
-        float3 lightMap = SAMPLE_TEXTURE2D(_LightMap, sampler_LightMap, i.uv);
+        half4 baseColor = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv);
+        half3 lightMap = SAMPLE_TEXTURE2D(_LightMap, sampler_LightMap, i.uv);
         
         // AO
-        float ao =  GetAO(i.worldNormal, lightDir, lightMap.r);
-        //float shadow = GetShadow(i, lightDir);
+        float ao =  GetAO(i, lightDir);
+        float shadow = GetShadow(i, lightDir);
+        //return shadow;
         
         // Ramp        
-        float3 rampColor = GetRampColor(i, lightDir);
-        float3 diffuse = rampColor * baseColor.rgb * ao;
-        float3 specular = GetSpecular(i, lightDir);
-        
+        half3 rampColor = GetRampColor(i, lightDir);
+        //half3 diffuse = rampColor * baseColor.rgb * ao;
+        half3 diffuse = rampColor * baseColor.rgb;
+        half3 specular = GetSpecular(i, lightDir);
+
+        float3 emission = float3(0, 0, 0);
         // Emission
         #ifdef EMISSION_ON
-            float3 emission = GetEmission(i, baseColor.rgb);
             emission = GetEmission(i, baseColor.rgb);
             specular += emission;
         #endif
         
         // RimLight
-        float3 rimlight = GetRimLight(i);
+        half3 rimlight = GetRimLight(i);
 
         // Reflection
         #ifdef REFLECTION_ON
@@ -320,10 +338,10 @@
             specular += fresnel;
         #endif
         
-        float3 finalColor = diffuse + specular + rimlight;
+        half3 finalColor = diffuse + specular + rimlight;
         finalColor = AdjustColor(finalColor);
         
-        return float4(finalColor, _Alpha);
+        return half4(finalColor, _Alpha);
     }
 
 
