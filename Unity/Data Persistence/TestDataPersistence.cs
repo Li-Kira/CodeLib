@@ -27,6 +27,7 @@ public class TestDataPersistence : MonoBehaviour
         Debug.Log(Application.persistentDataPath);
         SourceInputField.text = JsonConvert.SerializeObject(m_PlayerState, Formatting.Indented);
         
+        // 使用下面代码生成密钥
         // using Aes aesProvider = Aes.Create();
         // Debug.Log($"Initialization Vector: {Convert.ToBase64String(aesProvider.IV)}");
         // Debug.Log($"Key: {Convert.ToBase64String(aesProvider.Key)}");
@@ -63,10 +64,39 @@ public class TestDataPersistence : MonoBehaviour
         {
             TargetInputField.text = "<color=#ff0000>Error saving data</color>";
         }
+    }
+    
+    public async void SerializeJsonAsync()
+    {
+        long startTime = DateTime.Now.Ticks;
         
-        
-        
-        
+        if (await m_JsonDataService.SaveDataAsync("/player-state.json", m_PlayerState, EncryptionEnabled))
+        {
+            // 保存Json文件
+            long saveTime = DateTime.Now.Ticks - startTime;
+            SaveTimeText.text = $"Save Time: {(saveTime / 1000f):N4} ms";
+            
+            // 读取Json
+            startTime = DateTime.Now.Ticks;
+            try
+            {
+                PlayerState data = await m_JsonDataService.LoadDataAsync<PlayerState>("/player-state.json", EncryptionEnabled);
+                long loadTime = DateTime.Now.Ticks - startTime;
+
+                TargetInputField.text = "Load file form: " + Application.persistentDataPath + "\n"  + JsonConvert.SerializeObject(data, Formatting.Indented);
+                LoadTimeText.text = $"Load Time: {(loadTime / 1000f):N4} ms";
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("Could not read file!");
+                TargetInputField.text = $"<color=#ff0000>Error Reading file: {e.Message}</color>";
+                throw;
+            }
+        }
+        else
+        {
+            TargetInputField.text = "<color=#ff0000>Error saving data</color>";
+        }
     }
     
     private PlayerState m_PlayerState = new PlayerState
