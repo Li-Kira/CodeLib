@@ -1,3 +1,5 @@
+using UnityEngine;
+
 public abstract class StateMachine
 {
     protected IState currentState;
@@ -25,5 +27,29 @@ public abstract class StateMachine
     public void PhysicsUpdate()
     {
         currentState?.PhysicsUpdate();
+    }
+
+    public void OnAnimationEnterEvent()
+    {
+        currentState?.OnAnimationEnterEvent();
+    }
+    
+    public void OnAnimationExitEvent()
+    {
+        currentState?.OnAnimationExitEvent();
+    }
+    
+    public void OnAnimationTransitionEvent()
+    {
+        currentState?.OnAnimationTransitionEvent();
+    }
+    
+    public void OnTriggerEnter(Collider collider)
+    {
+        currentState?.OnTriggerEnter(collider);
+    }
+    public void OnTriggerExit(Collider collider)
+    {
+        currentState?.OnTriggerExit(collider);
     }
 }

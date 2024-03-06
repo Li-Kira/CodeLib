@@ -1,18 +1,12 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerRunData : MonoBehaviour
+[Serializable]
+public class PlayerRunData 
 {
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    [field: SerializeField]
+    [field: Range(0f, 1f)]
+    public float SpeedModifier { get; private set; } = 1f;
 }
